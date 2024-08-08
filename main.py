@@ -1,6 +1,9 @@
+from dotenv import load_dotenv
 import os
 from crawler import is_flight_schedule_available
 from slack import send_slack_webhook
+
+load_dotenv()
 
 def main():
     print('start to check flight schedule')
