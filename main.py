@@ -11,6 +11,8 @@ def main():
     if is_available:
         webhook_url = os.getenv('SLACK_WEBHOOK_URL')
         message = 'flight schedule available !'
+        
+        # TODO: 비행기 스케줄 시간도 긁어서 보내기
         send_slack_webhook(webhook_url, message)
 
 
