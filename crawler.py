@@ -1,15 +1,19 @@
+import os
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def is_flight_schedule_available():
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
     driver = webdriver.Chrome(options=options)
-
-    url = 'https://sky.interpark.com/schedules/domestic/CJU-GMP-20240917?adt=2&chd=0&inf=0&seat=ALL&pickAirLine=&pickMainFltNo=&pickSDate='
+    flight_schedule_date = os.getenv('FLIGHT_SCHEDULE_DATE')
+    url = f'https://sky.interpark.com/schedules/domestic/CJU-GMP-{flight_schedule_date}?adt=2&chd=0&inf=0&seat=ALL&pickAirLine=&pickMainFltNo=&pickSDate='
 
     driver.get(url)
 
