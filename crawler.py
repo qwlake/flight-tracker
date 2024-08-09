@@ -46,7 +46,7 @@ def get_flight_schedules(url):
     driver = get_driver(url)
 
     try:
-        WebDriverWait(driver, 5).until(
+        WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, 'div.scheduleList > div.tblbody > div.scrollArea'))
         )
         
