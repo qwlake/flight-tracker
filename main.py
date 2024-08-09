@@ -1,25 +1,32 @@
 import time
 from dotenv import load_dotenv
 import os
-from crawler import is_flight_schedule_available
+from crawler import get_flight_schedules
 from slack import send_slack_webhook
 
 load_dotenv()
 
 def main():
+    flight_schedule_date = os.getenv('FLIGHT_SCHEDULE_DATE')
+    url = f'https://sky.interpark.com/schedules/domestic/CJU-GMP-{flight_schedule_date}?adt=2&chd=0&inf=0&seat=DOMESTIC_BASE&pickAirLine=&pickMainFltNo=&pickSDate='
+
     webhook_url = os.getenv('SLACK_WEBHOOK_URL')
-    message = 'flight schedule available !'
 
     while True:
-        print('Start to check flight schedule')
+        try:
+            print('Start to check flight schedule')
+            schedules = get_flight_schedules(url)
+            message = "\n".join([
+                f"*Airline:* {schedule['airline_name']}\n*Departure:* {schedule['departure_time']} - *Arrival:* {schedule['arrival_time']}\n*Fee:* {schedule['fee']}\n"
+                for schedule in schedules
+            ])
 
-        is_available = is_flight_schedule_available()
-
-        if is_available:
-            # TODO: 비행기 스케줄 시간도 긁어서 보내기
             send_slack_webhook(webhook_url, message)
-        time.sleep(30)
+        except Exception as e:
+            error_message = f"Error sending message: {e}"
+            send_slack_webhook(webhook_url, error_message)
 
+        time.sleep(30)
 
 if __name__ == "__main__":
     main()

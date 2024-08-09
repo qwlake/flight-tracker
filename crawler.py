@@ -8,10 +8,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def is_flight_schedule_available():
-    flight_schedule_date = os.getenv('FLIGHT_SCHEDULE_DATE')
-    url = f'https://sky.interpark.com/schedules/domestic/CJU-GMP-{flight_schedule_date}?adt=2&chd=0&inf=0&seat=DOMESTIC_BASE&pickAirLine=&pickMainFltNo=&pickSDate='
 
+def get_driver(url):
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
     options.add_argument("--disable-gpu")
@@ -21,6 +19,11 @@ def is_flight_schedule_available():
 
     driver = webdriver.Chrome(options=options)
     driver.get(url)
+
+    return driver
+
+def is_flight_schedule_available(url):
+    driver = get_driver(url)
 
     try:
         WebDriverWait(driver, 5).until(
@@ -35,6 +38,48 @@ def is_flight_schedule_available():
         
     except:
         return False
+
+    finally:
+        driver.quit()
+
+def get_flight_schedules(url):
+    driver = get_driver(url)
+
+    try:
+        WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'div.scheduleList > div.tblbody > div.scrollArea'))
+        )
+        
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        
+        scroll_area_div = soup.select_one('div.scheduleList > div.tblbody > div.scrollArea')
+        if scroll_area_div:
+            flight_info_list = []
+            items = scroll_area_div.select('li.itemBlock')
+            
+            for item in items:
+                airline_name_element = item.select_one('span.airlineName > span.name')
+                flight_time_element = item.select('div.airlineTime .time')
+                fee_element = item.select_one('span.fee')
+
+                airline_name = airline_name_element.text.strip() if airline_name_element else None
+                departure_time = flight_time_element[0].text.strip() if flight_time_element else None
+                arrival_time = flight_time_element[1].text.strip() if flight_time_element else None
+                fee = fee_element.text.strip() if fee_element else None
+                
+                flight_info = {
+                    "airline_name": airline_name,
+                    "departure_time": departure_time,
+                    "arrival_time": arrival_time,
+                    "fee": fee
+                }
+
+                flight_info_list.append(flight_info)
+            
+            return flight_info_list
+        
+    except e as e:
+        return e
 
     finally:
         driver.quit()
