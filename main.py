@@ -1,4 +1,5 @@
 import time
+import traceback
 from dotenv import load_dotenv
 import os
 from crawler import get_flight_schedules
@@ -23,7 +24,8 @@ def main():
 
             send_slack_webhook(webhook_url, message)
         except Exception as e:
-            error_message = f"Error sending message: {e}"
+            error_message = f"Error sending message: {e}\n{traceback.format_exc()}"
+
             send_slack_webhook(webhook_url, error_message)
 
         time.sleep(30)
