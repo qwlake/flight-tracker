@@ -16,12 +16,15 @@ def get_driver(url):
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    # options.add_argument("--remote-debugging-port=9222") 
-    options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+    options.add_argument("--remote-debugging-port=9222") 
     options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 
 
     driver = webdriver.Chrome(service=Service(), options=options)
+    driver.execute_script("return navigator.webdriver")
+    driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+
     driver.get(url)
 
     return driver
@@ -30,7 +33,7 @@ def is_flight_schedule_available(url):
     driver = get_driver(url)
 
     try:
-        WebDriverWait(driver, 30).until(
+        WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, 'div.scheduleList > div.tblbody > div.scrollArea'))
         )
         
@@ -51,7 +54,7 @@ def get_flight_schedules(url):
     driver = get_driver(url)
 
     try:
-        WebDriverWait(driver, 30).until(
+        WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, 'div.scheduleList > div.tblbody > div.scrollArea'))
         )
         
@@ -83,8 +86,8 @@ def get_flight_schedules(url):
             
             return flight_info_list
         
-    except Exception as e:
-        raise e
+    except:
+        return []
 
     finally:
         driver.quit()
