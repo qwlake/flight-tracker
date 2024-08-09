@@ -14,7 +14,6 @@ def main():
         webhook_url = os.getenv('SLACK_WEBHOOK_URL')
 
         try:
-            print('Start to check flight schedule')
             schedules = get_flight_schedules(url)
             if schedules:
                 message = "<!channel>\n" + "\n".join([
@@ -24,12 +23,10 @@ def main():
             else:
                 message = "예약 가능 스케줄이 없습니다."
 
-            send_slack_webhook(webhook_url, message)
-
         except Exception as e:
-            error_message = f"Error sending message: {e}\n{traceback.format_exc()}"
+            message = f"Error sending message: {e}\n{traceback.format_exc()}"
 
-            send_slack_webhook(webhook_url, error_message)
+        send_slack_webhook(webhook_url, message)
         
         random_number = random.randint(30, 60)
         time.sleep(random_number)
