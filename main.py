@@ -10,9 +10,7 @@ load_dotenv()
 
 def main():
     while True:
-        flight_schedule_date = os.getenv('FLIGHT_SCHEDULE_DATE')
-        url = f'https://sky.interpark.com/schedules/domestic/CJU-GMP-{flight_schedule_date}?adt=2&chd=0&inf=0&seat=DOMESTIC_BASE&pickAirLine=&pickMainFltNo=&pickSDate='
-
+        url = os.getenv('FLIGHT_SCHEDULE_URL')
         webhook_url = os.getenv('SLACK_WEBHOOK_URL')
 
         try:
