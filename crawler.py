@@ -13,7 +13,7 @@ def is_flight_schedule_available():
     options.add_argument('--headless')
     driver = webdriver.Chrome(options=options)
     flight_schedule_date = os.getenv('FLIGHT_SCHEDULE_DATE')
-    url = f'https://sky.interpark.com/schedules/domestic/CJU-GMP-{flight_schedule_date}?adt=2&chd=0&inf=0&seat=ALL&pickAirLine=&pickMainFltNo=&pickSDate='
+    url = f'https://sky.interpark.com/schedules/domestic/CJU-GMP-{flight_schedule_date}?adt=2&chd=0&inf=0&seat=DOMESTIC_BASE&pickAirLine=&pickMainFltNo=&pickSDate='
 
     driver.get(url)
 
