@@ -13,25 +13,22 @@ def main():
 
     webhook_url = os.getenv('SLACK_WEBHOOK_URL')
 
-    while True:
-        try:
-            print('Start to check flight schedule')
-            schedules = get_flight_schedules(url)
-            print(schedules)
-            message = "\n".join([
-                f"*Airline:* {schedule['airline_name']}\n*Departure:* {schedule['departure_time']} - *Arrival:* {schedule['arrival_time']}\n*Fee:* {schedule['fee']}\n"
-                for schedule in schedules
-            ])
+    try:
+        print('Start to check flight schedule')
+        schedules = get_flight_schedules(url)
+        print(schedules)
+        message = "\n".join([
+            f"*Airline:* {schedule['airline_name']}\n*Departure:* {schedule['departure_time']} - *Arrival:* {schedule['arrival_time']}\n*Fee:* {schedule['fee']}\n"
+            for schedule in schedules
+        ])
 
-            send_slack_webhook(webhook_url, message)
+        send_slack_webhook(webhook_url, message)
 
-        except Exception as e:
-            error_message = f"Error sending message: {e}\n{traceback.format_exc()}"
-            print(error_message)
+    except Exception as e:
+        error_message = f"Error sending message: {e}\n{traceback.format_exc()}"
+        print(error_message)
 
-            send_slack_webhook(webhook_url, error_message)
-
-        time.sleep(60)
+        send_slack_webhook(webhook_url, error_message)
 
 if __name__ == "__main__":
     main()
