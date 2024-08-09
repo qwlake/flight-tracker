@@ -78,8 +78,8 @@ def get_flight_schedules(url):
             
             return flight_info_list
         
-    except e as e:
-        return e
+    except Exception as e:
+        raise e
 
     finally:
         driver.quit()
