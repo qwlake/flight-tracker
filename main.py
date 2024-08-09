@@ -25,6 +25,7 @@ def main():
             send_slack_webhook(webhook_url, message)
         except Exception as e:
             error_message = f"Error sending message: {e}\n{traceback.format_exc()}"
+            print(error_message)
 
             send_slack_webhook(webhook_url, error_message)
 
