@@ -16,7 +16,6 @@ def main():
     try:
         print('Start to check flight schedule')
         schedules = get_flight_schedules(url)
-        print(schedules)
         message = "\n".join([
             f"*Airline:* {schedule['airline_name']}\n*Departure:* {schedule['departure_time']} - *Arrival:* {schedule['arrival_time']}\n*Fee:* {schedule['fee']}\n"
             for schedule in schedules
