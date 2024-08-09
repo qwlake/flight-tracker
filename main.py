@@ -19,12 +19,14 @@ def main():
             print('Start to check flight schedule')
             schedules = get_flight_schedules(url)
             if schedules:
-                message = "\n".join([
+                message = "<!channel>\n" + "\n".join([
                     f"*Airline:* {schedule['airline_name']}\n*Departure:* {schedule['departure_time']} - *Arrival:* {schedule['arrival_time']}\n*Fee:* {schedule['fee']}\n"
                     for schedule in schedules
                 ])
+            else:
+                message = "예약 가능 스케줄이 없습니다."
 
-                send_slack_webhook(webhook_url, message)
+            send_slack_webhook(webhook_url, message)
 
         except Exception as e:
             error_message = f"Error sending message: {e}\n{traceback.format_exc()}"
