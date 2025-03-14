@@ -9,22 +9,25 @@ import random
 load_dotenv()
 
 def main():
+
+    previous_message = ''
+
     while True:
-        urls = os.getenv('FLIGHT_SCHEDULE_URL')
+        url = os.getenv('FLIGHT_SCHEDULE_URL')
+        dates = os.getenv('FLIGHT_SCHEDULE_DATE')
         webhook_url = os.getenv('SLACK_WEBHOOK_URL')
 
         schedules_map = dict()
         try:
-            for url in urls.split('\\'):
-                schedules = get_flight_schedules(url)
+            for date in dates.split(','):
+                tmp = url + date + '?adt=2'
+                schedules = get_flight_schedules(tmp)
                 if schedules:
-                    schedules_map[url[-8:]] = schedules
+                    schedules_map[date] = schedules
 
             message = ''
 
             for date, schedules in schedules_map.items():
-                if message == '':
-                    message = "<!channel>\n"
                 message += "\n".join([
                     f"*Airline:* {schedule['airline_name']}\n*Departure:* {date} {schedule['departure_time']} - *Arrival:* {date} {schedule['arrival_time']}\n*Fee:* {schedule['fee']}\n"
                     for schedule in schedules
@@ -32,12 +35,19 @@ def main():
 
             if message == '':
                 message = "예약 가능 스케줄이 없습니다."
+            else:
+                if previous_message != message:
+                    new_message = True
+                else:
+                    new_message = False
+                previous_message = message
+                if new_message:
+                    message = "<!channel>\n" + message
 
         except Exception as e:
             message = f"Error sending message: {e}\n{traceback.format_exc()}"
 
         send_slack_webhook(webhook_url, message)
-        print(message)
 
         random_number = random.randint(30, 60)
         time.sleep(random_number)
