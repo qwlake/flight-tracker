@@ -15,7 +15,7 @@ def main():
 
         schedules = []
         try:
-            for url in urls.split(';'):
+            for url in urls.split('\\'):
                 schedules += get_flight_schedules(url)
 
             if schedules:

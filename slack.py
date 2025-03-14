@@ -10,7 +10,7 @@ def send_slack_webhook(webhook_url, message):
         'text': message,
     }
 
-    response = requests.post(webhook_url, headers=headers, data=json.dumps(data))
+    response = requests.post(webhook_url, headers=headers, data=json.dumps(data), verify=False)
 
     if response.status_code != 200:
         return False
