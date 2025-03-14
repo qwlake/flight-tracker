@@ -10,11 +10,14 @@ load_dotenv()
 
 def main():
     while True:
-        url = os.getenv('FLIGHT_SCHEDULE_URL')
+        urls = os.getenv('FLIGHT_SCHEDULE_URL')
         webhook_url = os.getenv('SLACK_WEBHOOK_URL')
 
+        schedules = []
         try:
-            schedules = get_flight_schedules(url)
+            for url in urls.split(';'):
+                schedules += get_flight_schedules(url)
+
             if schedules:
                 message = "<!channel>\n" + "\n".join([
                     f"*Airline:* {schedule['airline_name']}\n*Departure:* {schedule['departure_time']} - *Arrival:* {schedule['arrival_time']}\n*Fee:* {schedule['fee']}\n"
@@ -27,7 +30,7 @@ def main():
             message = f"Error sending message: {e}\n{traceback.format_exc()}"
 
         send_slack_webhook(webhook_url, message)
-        
+
         random_number = random.randint(30, 60)
         time.sleep(random_number)
 
