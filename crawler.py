@@ -19,7 +19,7 @@ def get_driver(url):
     options.add_argument("--remote-debugging-port=9222") 
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-    options.add_argument(f"--user-data-dir=/tmp/chrome_profile_{os.getpid()}")
+    options.add_argument("user-data-dir=/tmp/chrome_profile")
 
 
     driver = webdriver.Chrome(service=Service(), options=options)
