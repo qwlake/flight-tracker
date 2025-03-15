@@ -8,20 +8,41 @@ import random
 
 load_dotenv()
 
+
+def filter_time(schedules, departure_time, arrival_time):
+    def is_valid_departure_time():
+        if not departure_time or departure_time == '':
+            return True
+        return departure_time < schedule['departure_time']
+
+    def is_valid_arrival_time():
+        if not arrival_time or arrival_time == '':
+            return True
+        return schedule['arrival_time'] < arrival_time
+
+    filtered_schedules = []
+    for schedule in schedules:
+        if is_valid_departure_time() and is_valid_arrival_time():
+            filtered_schedules.append(schedule)
+    return filtered_schedules
+
 def main():
 
     previous_message = ''
 
     while True:
         url = os.getenv('FLIGHT_SCHEDULE_URL')
-        dates = os.getenv('FLIGHT_SCHEDULE_DATE')
+        dates = os.getenv('FLIGHT_SCHEDULE_DATE').split(',')
+        departure_time = os.getenv('FLIGHT_SCHEDULE_DEPARTURE_TIME')
+        arrival_time = os.getenv('FLIGHT_SCHEDULE_ARRIVAL_TIME')
         webhook_url = os.getenv('SLACK_WEBHOOK_URL')
 
         schedules_map = dict()
         try:
-            for date in dates.split(','):
+            for date in dates:
                 tmp = url + date + '?adt=2'
                 schedules = get_flight_schedules(tmp)
+                schedules = filter_time(schedules, departure_time, arrival_time)
                 if schedules:
                     schedules_map[date] = schedules
 
@@ -47,7 +68,8 @@ def main():
         except Exception as e:
             message = f"Error sending message: {e}\n{traceback.format_exc()}"
 
-        send_slack_webhook(webhook_url, message)
+        current_time = time.strftime('%m-%d %H:%M', time.localtime())
+        send_slack_webhook(webhook_url, f'{current_time} | {message}')
 
         random_number = random.randint(30, 60)
         time.sleep(random_number)
