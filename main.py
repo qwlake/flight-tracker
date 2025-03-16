@@ -82,11 +82,12 @@ def main():
 
         current_time = datetime.now(timezone_KST)
         if current_time.minute != server_time_ticker.minute:
-            current_time_str = current_time.strftime('%y-%m-%d %H:%M%:S')
+            current_time_str = current_time.strftime('%y-%m-%d %H:%M:%S')
             send_slack_webhook(status_webhook_url, f'{current_time_str} | Server is running')
             server_time_ticker = current_time
 
-        send_slack_webhook(webhook_url, message.get_print_text())
+        if message.text != '':
+            send_slack_webhook(webhook_url, message.get_print_text())
 
         random_number = random.randint(5, 10)
         time.sleep(random_number)
