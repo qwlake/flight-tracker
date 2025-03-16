@@ -1,5 +1,7 @@
 import time
 import traceback
+from datetime import timezone, timedelta, datetime
+
 from dotenv import load_dotenv
 import os
 from crawler import get_flight_schedules
@@ -7,6 +9,7 @@ from slack import send_slack_webhook
 import random
 
 load_dotenv()
+KST = timezone(timedelta(hours=9))
 
 
 def filter_time(schedules, departure_time, arrival_time):
@@ -68,7 +71,7 @@ def main():
         except Exception as e:
             message = f"Error sending message: {e}\n{traceback.format_exc()}"
 
-        current_time = time.strftime('%m-%d %H:%M', time.localtime())
+        current_time = datetime.now(KST).strftime('%m-%d %H:%M')
         send_slack_webhook(webhook_url, f'{current_time} | {message}')
 
         random_number = random.randint(30, 60)
