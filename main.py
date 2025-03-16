@@ -9,7 +9,22 @@ from slack import send_slack_webhook
 import random
 
 load_dotenv()
-KST = timezone(timedelta(hours=9))
+timezone_KST = timezone(timedelta(hours=9))
+
+
+class Message:
+
+    def __init__(self, tz = None):
+        self.text = ''
+        self.is_new = False
+        self.timezone = tz if tz is not None else timezone(timedelta(hours=9))
+
+    def get_print_text(self):
+        current_time = datetime.now(self.timezone).strftime('%m-%d %H:%M')
+        print_text = self.text
+        if self.is_new:
+            print_text = '<!channel>\n' + print_text
+        return f'{current_time} | {print_text}'
 
 
 def filter_time(schedules, departure_time, arrival_time):
@@ -31,7 +46,8 @@ def filter_time(schedules, departure_time, arrival_time):
 
 def main():
 
-    previous_message = ''
+    previous_message = Message(tz=timezone_KST)
+    server_time_ticker = datetime.now()
 
     while True:
         url = os.getenv('FLIGHT_SCHEDULE_URL')
@@ -39,8 +55,10 @@ def main():
         departure_time = os.getenv('FLIGHT_SCHEDULE_DEPARTURE_TIME')
         arrival_time = os.getenv('FLIGHT_SCHEDULE_ARRIVAL_TIME')
         webhook_url = os.getenv('SLACK_WEBHOOK_URL')
+        status_webhook_url = os.getenv('SLACK_STATUS_WEBHOOK_URL')
 
         schedules_map = dict()
+        message = Message(tz=timezone_KST)
         try:
             for date in dates:
                 tmp = url + date + '?adt=2'
@@ -49,33 +67,30 @@ def main():
                 if schedules:
                     schedules_map[date] = schedules
 
-            message = ''
-
             for date, schedules in schedules_map.items():
-                message += "\n".join([
+                message.text += "\n".join([
                     f"*Airline:* {schedule['airline_name']}\n*Departure:* {date} {schedule['departure_time']} - *Arrival:* {date} {schedule['arrival_time']}\n*Fee:* {schedule['fee']}\n"
                     for schedule in schedules
                 ])
 
-            if message == '':
-                message = "예약 가능 스케줄이 없습니다."
-            else:
-                if previous_message != message:
-                    new_message = True
-                else:
-                    new_message = False
-                previous_message = message
-                if new_message:
-                    message = "<!channel>\n" + message
+            if message.text != '' and previous_message.text != message.text:
+                message.is_new = True
+            previous_message = message
 
         except Exception as e:
-            message = f"Error sending message: {e}\n{traceback.format_exc()}"
+            message.text = f"Error sending message: {e}\n{traceback.format_exc()}"
 
-        current_time = datetime.now(KST).strftime('%m-%d %H:%M')
-        send_slack_webhook(webhook_url, f'{current_time} | {message}')
+        current_time = datetime.now(timezone_KST)
+        if current_time.minute != server_time_ticker.minute:
+            current_time_str = current_time.strftime('%y-%m-%d %H:%M%:S')
+            send_slack_webhook(status_webhook_url, f'{current_time_str} | Server is running')
+            server_time_ticker = current_time
 
-        random_number = random.randint(30, 60)
+        send_slack_webhook(webhook_url, message.get_print_text())
+
+        random_number = random.randint(5, 10)
         time.sleep(random_number)
+
 
 if __name__ == "__main__":
     main()
