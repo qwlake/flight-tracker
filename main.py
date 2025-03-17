@@ -50,6 +50,7 @@ def main():
     server_time_ticker = datetime.now()
 
     while True:
+        server_name = os.getenv('SERVER_NAME')
         url = os.getenv('FLIGHT_SCHEDULE_URL')
         dates = os.getenv('FLIGHT_SCHEDULE_DATE').split(',')
         departure_time = os.getenv('FLIGHT_SCHEDULE_DEPARTURE_TIME')
@@ -80,7 +81,7 @@ def main():
         current_time = datetime.now(timezone_KST)
         if current_time.minute != server_time_ticker.minute:
             current_time_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
-            send_slack_webhook(status_webhook_url, f'{current_time_str} | Server is running')
+            send_slack_webhook(status_webhook_url, f'{current_time_str} | {server_name} is running')
             server_time_ticker = current_time
 
         if previous_message.text != message.text:
