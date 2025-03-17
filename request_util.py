@@ -48,14 +48,17 @@ def get_flight_schedules(dep, arr, depDate):
                 airline_name = seg_fare.get("carDesc")
                 departure_time = seg_fare.get("depTime")
                 arrival_time = seg_fare.get("arrTime")
+                fuel_charge = seg_fare.get("fuelChg")
+                air_tax = seg_fare.get("airTax")
+                tasf = seg_fare.get("tasf")
                 class_detail = seg_fare.get("classDetail") or []
 
                 for class_info in class_detail:
                     results.append({
                         "airline_name": airline_name,
-                        "departure_time": departure_time,
+                        "departure_time": departure_time[:2] + ':' + departure_time[2:],
                         "arrival_time": arrival_time,
-                        "fee": class_info.get("fare"),
+                        "fee": format(class_info.get("fare") + fuel_charge + air_tax + tasf, ',') + '원',
                         "seats": class_info.get("noOfAvailSeat")
                     })
 
