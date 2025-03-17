@@ -68,26 +68,28 @@ def main():
                     schedules_map[date] = schedules
 
             for date, schedules in schedules_map.items():
+                formated_date = datetime.strptime(date, '%Y%m%d').strftime('%m-%d')
                 message.text += "\n".join([
-                    f"*Airline:* {schedule['airline_name']}\n*Departure:* {date} {schedule['departure_time']} - *Arrival:* {date} {schedule['arrival_time']}\n*Fee:* {schedule['fee']}\n"
+                    f"*Airline:* {schedule['airline_name']}\n*Dep:* {formated_date} {schedule['departure_time']} - *Arr:* {formated_date} {schedule['arrival_time']}\n*Fee:* {schedule['fee']}\n"
                     for schedule in schedules
                 ])
-
-            if message.text != '' and previous_message.text != message.text:
-                message.is_new = True
-            previous_message = message
 
         except Exception as e:
             message.text = f"Error sending message: {e}\n{traceback.format_exc()}"
 
         current_time = datetime.now(timezone_KST)
         if current_time.minute != server_time_ticker.minute:
-            current_time_str = current_time.strftime('%y-%m-%d %H:%M:%S')
+            current_time_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
             send_slack_webhook(status_webhook_url, f'{current_time_str} | Server is running')
             server_time_ticker = current_time
 
-        if message.text != '':
-            send_slack_webhook(webhook_url, message.get_print_text())
+        if previous_message.text != message.text:
+            if message.text != '':
+                message.is_new = True
+                send_slack_webhook(webhook_url, message.get_print_text())
+            else:
+                send_slack_webhook(webhook_url, "좌석이 마감되었습니다.")
+        previous_message = message
 
         random_number = random.randint(5, 10)
         time.sleep(random_number)
