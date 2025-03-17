@@ -4,7 +4,8 @@ from datetime import timezone, timedelta, datetime
 
 from dotenv import load_dotenv
 import os
-from crawler import get_flight_schedules
+
+import request_util
 from slack import send_slack_webhook
 import random
 
@@ -12,19 +13,39 @@ load_dotenv()
 timezone_KST = timezone(timedelta(hours=9))
 
 
+class MessageContainer:
+
+    def __init__(self, webhook_url, tz = None):
+        self.webhook_url = webhook_url
+        self.timezone = tz if tz is not None else timezone(timedelta(hours=9))
+        self.previous_message: Message = Message(self.timezone)
+        self.message: Message = Message(self.timezone)
+
+    def rotate(self):
+        self.previous_message = self.message
+        self.message = Message(self.timezone)
+
+    def append_text(self, text):
+        self.message.text += text
+
+    def send_message(self):
+        if self.previous_message != self.message.text:
+            if self.message.text != '':
+                send_slack_webhook(self.webhook_url, '<!channel>\n' + self.message.get_print_text())
+            else:
+                send_slack_webhook(self.webhook_url, self.message.get_print_text())
+
+
 class Message:
 
     def __init__(self, tz = None):
         self.text = ''
-        self.is_new = False
         self.timezone = tz if tz is not None else timezone(timedelta(hours=9))
 
     def get_print_text(self):
         current_time = datetime.now(self.timezone).strftime('%m-%d %H:%M')
-        print_text = self.text
-        if self.is_new:
-            print_text = '<!channel>\n' + print_text
-        return f'{current_time} | {print_text}'
+        print_text = self.text if self.text != '' else '좌석이 마감되었습니다.'
+        return f'{print_text}\n{current_time}'
 
 
 def filter_time(schedules, departure_time, arrival_time):
@@ -46,39 +67,36 @@ def filter_time(schedules, departure_time, arrival_time):
 
 def main():
 
-    previous_message = Message(tz=timezone_KST)
+    webhook_url = os.getenv('SLACK_WEBHOOK_URL')
+    message_container = MessageContainer(webhook_url)
     server_time_ticker = datetime.now()
 
     while True:
         server_name = os.getenv('SERVER_NAME')
-        url = os.getenv('FLIGHT_SCHEDULE_URL')
         dates = os.getenv('FLIGHT_SCHEDULE_DATE').split(',')
         departure_time = os.getenv('FLIGHT_SCHEDULE_DEPARTURE_TIME')
         departure_location = os.getenv('FLIGHT_SCHEDULE_DEPARTURE_LOCATION')
         arrival_time = os.getenv('FLIGHT_SCHEDULE_ARRIVAL_TIME')
         arrival_location = os.getenv('FLIGHT_SCHEDULE_ARRIVAL_LOCATION')
-        webhook_url = os.getenv('SLACK_WEBHOOK_URL')
         status_webhook_url = os.getenv('SLACK_STATUS_WEBHOOK_URL')
 
         schedules_map = dict()
-        message = Message(tz=timezone_KST)
         try:
             for date in dates:
-                search_url = f'{url}/{departure_location}-{arrival_location}-{date}?adt=2'
-                schedules = get_flight_schedules(search_url)
+                schedules = request_util.get_flight_schedules(departure_location, arrival_location, date)
                 schedules = filter_time(schedules, departure_time, arrival_time)
                 if schedules:
                     schedules_map[date] = schedules
 
             for date, schedules in schedules_map.items():
                 formated_date = datetime.strptime(date, '%Y%m%d').strftime('%m-%d')
-                message.text += "\n".join([
+                message_container.append_text("\n".join([
                     f"*Airline:* {schedule['airline_name']}\n*Dep:* {departure_location} {formated_date} {schedule['departure_time']} - *Arr:* {arrival_location} {formated_date} {schedule['arrival_time']}\n*Fee:* {schedule['fee']}\n"
                     for schedule in schedules
-                ])
+                ]))
 
         except Exception as e:
-            message.text = f"Error sending message: {e}\n{traceback.format_exc()}"
+            message_container.append_text(f"Error sending message: {e}\n{traceback.format_exc()}")
 
         current_time = datetime.now(timezone_KST)
         if current_time.minute != server_time_ticker.minute:
@@ -86,13 +104,8 @@ def main():
             send_slack_webhook(status_webhook_url, f'{current_time_str} | {server_name} is running')
             server_time_ticker = current_time
 
-        if previous_message.text != message.text:
-            if message.text != '':
-                message.is_new = True
-                send_slack_webhook(webhook_url, message.get_print_text())
-            else:
-                send_slack_webhook(webhook_url, "좌석이 마감되었습니다.")
-        previous_message = message
+        message_container.send_message()
+        message_container.rotate()
 
         random_number = random.randint(10, 15)
         time.sleep(random_number)
