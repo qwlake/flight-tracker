@@ -29,7 +29,7 @@ class MessageContainer:
         self.message.text += text
 
     def send_message(self):
-        if self.previous_message != self.message.text:
+        if self.previous_message.text != self.message.text:
             if self.message.text != '':
                 send_slack_webhook(self.webhook_url, '<!channel>\n' + self.message.get_print_text())
             else:
