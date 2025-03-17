@@ -65,6 +65,15 @@ def filter_time(schedules, departure_time, arrival_time):
             filtered_schedules.append(schedule)
     return filtered_schedules
 
+
+def get_current_time():
+    return datetime.now(timezone_KST)
+
+
+def get_current_time_str():
+    return get_current_time().strftime('%Y-%m-%d %H:%M:%S')
+
+
 def main():
 
     webhook_url = os.getenv('SLACK_WEBHOOK_URL')
@@ -79,6 +88,12 @@ def main():
         arrival_time = os.getenv('FLIGHT_SCHEDULE_ARRIVAL_TIME')
         arrival_location = os.getenv('FLIGHT_SCHEDULE_ARRIVAL_LOCATION')
         status_webhook_url = os.getenv('SLACK_STATUS_WEBHOOK_URL')
+
+        current_time = get_current_time()
+        if current_time.minute != server_time_ticker.minute:
+            current_time_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
+            send_slack_webhook(status_webhook_url, f'{current_time_str} | {server_name} is running')
+            server_time_ticker = current_time
 
         schedules_map = dict()
         try:
@@ -95,17 +110,11 @@ def main():
                     for schedule in schedules
                 ]))
 
+            message_container.send_message()
+            message_container.rotate()
+
         except Exception as e:
-            message_container.append_text(f"Error sending message: {e}\n{traceback.format_exc()}")
-
-        current_time = datetime.now(timezone_KST)
-        if current_time.minute != server_time_ticker.minute:
-            current_time_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
-            send_slack_webhook(status_webhook_url, f'{current_time_str} | {server_name} is running')
-            server_time_ticker = current_time
-
-        message_container.send_message()
-        message_container.rotate()
+            send_slack_webhook(status_webhook_url, f'{get_current_time_str()} | {server_name} | Error fetching data: {e}\n{traceback.format_exc()}')
 
         random_number = random.randint(10, 15)
         time.sleep(random_number)
