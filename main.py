@@ -94,7 +94,7 @@ def main():
                 send_slack_webhook(webhook_url, "좌석이 마감되었습니다.")
         previous_message = message
 
-        random_number = random.randint(5, 10)
+        random_number = random.randint(10, 15)
         time.sleep(random_number)
 
 
