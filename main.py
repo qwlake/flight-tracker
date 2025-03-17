@@ -54,7 +54,9 @@ def main():
         url = os.getenv('FLIGHT_SCHEDULE_URL')
         dates = os.getenv('FLIGHT_SCHEDULE_DATE').split(',')
         departure_time = os.getenv('FLIGHT_SCHEDULE_DEPARTURE_TIME')
+        departure_location = os.getenv('FLIGHT_SCHEDULE_DEPARTURE_LOCATION')
         arrival_time = os.getenv('FLIGHT_SCHEDULE_ARRIVAL_TIME')
+        arrival_location = os.getenv('FLIGHT_SCHEDULE_ARRIVAL_LOCATION')
         webhook_url = os.getenv('SLACK_WEBHOOK_URL')
         status_webhook_url = os.getenv('SLACK_STATUS_WEBHOOK_URL')
 
@@ -62,8 +64,8 @@ def main():
         message = Message(tz=timezone_KST)
         try:
             for date in dates:
-                tmp = url + date + '?adt=2'
-                schedules = get_flight_schedules(tmp)
+                search_url = f'{url}/{departure_location}-{arrival_location}-{date}?adt=2'
+                schedules = get_flight_schedules(search_url)
                 schedules = filter_time(schedules, departure_time, arrival_time)
                 if schedules:
                     schedules_map[date] = schedules
@@ -71,7 +73,7 @@ def main():
             for date, schedules in schedules_map.items():
                 formated_date = datetime.strptime(date, '%Y%m%d').strftime('%m-%d')
                 message.text += "\n".join([
-                    f"*Airline:* {schedule['airline_name']}\n*Dep:* {formated_date} {schedule['departure_time']} - *Arr:* {formated_date} {schedule['arrival_time']}\n*Fee:* {schedule['fee']}\n"
+                    f"*Airline:* {schedule['airline_name']}\n*Dep:* {departure_location} {formated_date} {schedule['departure_time']} - *Arr:* {arrival_location} {formated_date} {schedule['arrival_time']}\n*Fee:* {schedule['fee']}\n"
                     for schedule in schedules
                 ])
 
