@@ -57,7 +57,7 @@ def get_flight_schedules(dep, arr, depDate):
                     results.append({
                         "airline_name": airline_name,
                         "departure_time": departure_time[:2] + ':' + departure_time[2:],
-                        "arrival_time": arrival_time,
+                        "arrival_time": arrival_time[:2] + ':' + arrival_time[2:],
                         "fee": format(int(class_info.get("fare")) + int(fuel_charge) + int(air_tax) + int(tasf), ',') + '원',
                         "seats": class_info.get("noOfAvailSeat")
                     })
