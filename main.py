@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import os
 
 import request_util
+from log import logger
 from slack import send_slack_webhook
 import random
 
@@ -19,6 +20,7 @@ class ServerStatusMonitor:
         self.server_name = server_name
 
     def tick(self):
+        logger.debug("Server status monitor tick")
         current_time = self.get_current_time()
         if current_time.minute != self.server_time_ticker.minute:
             current_time_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
