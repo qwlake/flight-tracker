@@ -7,7 +7,7 @@ import requests
 base_search_api_url = "https://sky.interpark.com/api/v1/schedule/domestic"
 airline_codes = ["RS", "BX", "OZ", "LJ", "TW", "ZE", "7C", "KE"]
 
-def get_flight_schedules(dep, arr, depDate):
+def get_flight_schedules(dep, arr, depDate, departure_time_range):
 
     # 요청 파라미터
     params = {
@@ -54,13 +54,16 @@ def get_flight_schedules(dep, arr, depDate):
                 class_detail = seg_fare.get("classDetail") or []
 
                 for class_info in class_detail:
-                    results.append({
-                        "airline_name": airline_name,
-                        "departure_time": departure_time[:2] + ':' + departure_time[2:],
-                        "arrival_time": arrival_time[:2] + ':' + arrival_time[2:],
-                        "fee": format(int(class_info.get("fare")) + int(fuel_charge) + int(air_tax) + int(tasf), ',') + '원',
-                        "seats": class_info.get("noOfAvailSeat")
-                    })
+                    if filter_time(departure_time, departure_time_range):
+                        results.append({
+                            "departure_location": dep,
+                            "arriance_location": arr,
+                            "airline_name": airline_name,
+                            "departure_time": departure_time[:2] + ':' + departure_time[2:],
+                            "arrival_time": arrival_time[:2] + ':' + arrival_time[2:],
+                            "fee": format(int(class_info.get("fare")) + int(fuel_charge) + int(air_tax) + int(tasf), ',') + '원',
+                            "seats": class_info.get("noOfAvailSeat")
+                        })
 
         except Exception as e:
             print(f"Error fetching data for {airline}: {e}")
@@ -68,3 +71,14 @@ def get_flight_schedules(dep, arr, depDate):
 
     return results
 
+
+def filter_time(departure_time, departure_time_range):
+    if not departure_time_range or departure_time_range == '':
+        return True
+    departure_time_range_start, departure_time_range_end = departure_time_range.split('-')
+    departure_time_range_start = departure_time_range_start if departure_time_range_start != '' else '0000'
+    departure_time_range_end = departure_time_range_end if departure_time_range_end != '' else '9999'
+    if departure_time_range_start < departure_time < departure_time_range_end:
+        return True
+    else:
+        return False

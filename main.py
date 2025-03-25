@@ -12,6 +12,29 @@ import random
 load_dotenv()
 timezone_KST = timezone(timedelta(hours=9))
 
+class ServerStatusMonitor:
+    def __init__(self, dt, status_webhook_url, server_name):
+        self.server_time_ticker = dt
+        self.status_webhook_url = status_webhook_url
+        self.server_name = server_name
+
+    def tick(self):
+        current_time = self.get_current_time()
+        if current_time.minute != self.server_time_ticker.minute:
+            current_time_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
+            send_slack_webhook(self.status_webhook_url, f'{current_time_str} | {self.server_name} is running')
+            self.server_time_ticker = current_time
+
+    def error(self, e: Exception | None = None):
+        text = f'{self.get_current_time_str()} | {self.server_name} | Error: {e if e is not None else ""}\n{traceback.format_exc()}'
+        send_slack_webhook(self.status_webhook_url, text)
+
+    def get_current_time(self):
+        return datetime.now(timezone_KST)
+
+    def get_current_time_str(self):
+        return self.get_current_time().strftime('%Y-%m-%d %H:%M:%S')
+
 
 class MessageContainer:
 
@@ -48,65 +71,31 @@ class Message:
         return f'{print_text}\n{current_time}'
 
 
-def filter_time(schedules, departure_time, arrival_time):
-    def is_valid_departure_time():
-        if not departure_time or departure_time == '':
-            return True
-        return departure_time < schedule['departure_time']
-
-    def is_valid_arrival_time():
-        if not arrival_time or arrival_time == '':
-            return True
-        return schedule['arrival_time'] < arrival_time
-
-    filtered_schedules = []
-    for schedule in schedules:
-        if is_valid_departure_time() and is_valid_arrival_time():
-            filtered_schedules.append(schedule)
-    return filtered_schedules
-
-
-def get_current_time():
-    return datetime.now(timezone_KST)
-
-
-def get_current_time_str():
-    return get_current_time().strftime('%Y-%m-%d %H:%M:%S')
-
-
 def main():
 
     webhook_url = os.getenv('SLACK_WEBHOOK_URL')
+    status_webhook_url = os.getenv('SLACK_STATUS_WEBHOOK_URL')
+    server_name = os.getenv('SERVER_NAME')
     message_container = MessageContainer(webhook_url)
-    server_time_ticker = datetime.now()
+    server_monitor = ServerStatusMonitor(datetime.now(), status_webhook_url, server_name)
 
     while True:
-        server_name = os.getenv('SERVER_NAME')
         dates = os.getenv('FLIGHT_SCHEDULE_DATE').split(',')
-        departure_time = os.getenv('FLIGHT_SCHEDULE_DEPARTURE_TIME')
         departure_location = os.getenv('FLIGHT_SCHEDULE_DEPARTURE_LOCATION')
-        arrival_time = os.getenv('FLIGHT_SCHEDULE_ARRIVAL_TIME')
         arrival_location = os.getenv('FLIGHT_SCHEDULE_ARRIVAL_LOCATION')
-        status_webhook_url = os.getenv('SLACK_STATUS_WEBHOOK_URL')
-
-        current_time = get_current_time()
-        if current_time.minute != server_time_ticker.minute:
-            current_time_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
-            send_slack_webhook(status_webhook_url, f'{current_time_str} | {server_name} is running')
-            server_time_ticker = current_time
+        departure_time_range = os.getenv('FLIGHT_SCHEDULE_DEPARTURE_TIME_RANGE') # 0500-2330
 
         schedules_map = dict()
         try:
             for date in dates:
-                schedules = request_util.get_flight_schedules(departure_location, arrival_location, date)
-                schedules = filter_time(schedules, departure_time, arrival_time)
+                schedules = request_util.get_flight_schedules(departure_location, arrival_location, date, departure_time_range)
                 if schedules:
                     schedules_map[date] = schedules
 
             for date, schedules in schedules_map.items():
                 formated_date = datetime.strptime(date, '%Y%m%d').strftime('%m-%d')
                 message_container.append_text("\n".join([
-                    f"*Airline:* {schedule['airline_name']}\n*Dep:* {departure_location} {formated_date} {schedule['departure_time']} - *Arr:* {arrival_location} {formated_date} {schedule['arrival_time']}\n*Fee:* {schedule['fee']}\n"
+                    f"*Airline:* {schedule['airline_name']}\n*Dep:* {schedule['departure_location']} {formated_date} {schedule['departure_time']} - *Arr:* {schedule['arrival_location']} {formated_date} {schedule['arrival_time']}\n*Fee:* {schedule['fee']}\n"
                     for schedule in schedules
                 ]))
 
@@ -114,8 +103,9 @@ def main():
             message_container.rotate()
 
         except Exception as e:
-            send_slack_webhook(status_webhook_url, f'{get_current_time_str()} | {server_name} | Error fetching data: {e}\n{traceback.format_exc()}')
+            server_monitor.error(e)
 
+        server_monitor.tick()
         random_number = random.randint(10, 15)
         time.sleep(random_number)
 
